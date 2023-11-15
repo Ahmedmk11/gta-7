@@ -10,10 +10,13 @@
 
 float playerX = 1.0f;
 float playerZ = 5.5f;
-float playerRotation = 0.0f;
+float playerRotation = 180.0f;
 bool topView = false;
 bool sideView = false;
 char lastKey;
+int rotation = 0.0f;
+float upDown = 0.5f;
+float increment = 0.01f;
 
 class Vector3f {
 public:
@@ -113,22 +116,24 @@ void drawGenericBoundary(char rotation) {
     switch (rotation) {
     case 'b':
         glTranslatef(0.5f * width, 0.5f * thickness, 0.5f * width);
-        glScalef(width, thickness, length);
+        glScalef(width * 4, thickness, length);
         glColor3f(1.0f, 0.0f, 0.0f);
         break;
     case 'r':
+        glTranslatef(width + 1.5 * width + 0.025, 1, 0.5f * width);
         glRotatef(90, 0, 0, 1.0f);
-        glTranslatef(0.5f * width, -2.025, 0.5f * width);
         glScalef(width, thickness, length);
         break;
     case 'l':
+        glTranslatef(-width - 0.5f * width - 0.025, 1, 0.5f * width);
         glRotatef(90, 0, 0, 1.0f);
-        glTranslatef(0.5f * width, 0.5f * thickness, 0.5f * width);
         glScalef(width, thickness, length);
         break;
-    case 't':
-        glTranslatef(0.5f * width, 0.5f * thickness, 0.5f * width);
-        glScalef(width, thickness, length);
+    case 'e':
+        glTranslatef(1, 1, -4);
+        glRotatef(90, 0, 0, 1);
+        glRotatef(90, 1, 0, 0);
+        glScalef(width, thickness, length-1.90);
         break;
     default:
         break;
@@ -165,7 +170,6 @@ void drawBigSmoke() {
     gluCylinder(quad, headSize / 2, headSize / 2, hatSize, 50, 50);
     glPopMatrix();
     glColor3f(1, 1, 1);
-
     
     // Head
     
@@ -174,6 +178,35 @@ void drawBigSmoke() {
     glTranslatef(0, legSize * 3 + bodySize + headSize/2, 0);
     glutSolidCube(headSize);
     glPopMatrix();
+    glColor3f(1, 1, 1);
+    
+    // Eyes
+    
+    glColor3f(1, 1, 1);
+    GLUquadric* quad3 = gluNewQuadric();
+    glPushMatrix();
+    glTranslatef(-0.03, legSize * 3 + bodySize + headSize / 2, headSize - 0.07);
+    glRotatef(90, 0.0f, 0.0f, 1.0f);
+    gluCylinder(quad3, 0.009, 0.009, 0.005, 50, 50);
+    glTranslatef(0.0f, 0.0f, 0.005);
+    gluDisk(quad3, 0.0, 0.009, 50, 1);
+    glTranslatef(0.0f, 0.0f, -0.005);
+    gluDisk(quad3, 0.0, 0.009, 50, 1);
+    glPopMatrix();
+    
+    glColor3f(1, 1, 1);
+    GLUquadric* quad4 = gluNewQuadric();
+    glPushMatrix();
+    glTranslatef(0.03, legSize * 3 + bodySize + headSize / 2, headSize - 0.07);
+    glRotatef(90, 0.0f, 0.0f, 1.0f);
+    gluCylinder(quad4, 0.009, 0.009, 0.005, 50, 50);
+    glTranslatef(0.0f, 0.0f, 0.005);
+    gluDisk(quad3, 0.0, 0.009, 50, 1);
+    glTranslatef(0.0f, 0.0f, -0.005);
+    gluDisk(quad3, 0.0, 0.009, 50, 1);
+    glPopMatrix();
+    
+    
     glColor3f(1, 1, 1);
     
     // Body
@@ -212,7 +245,7 @@ void drawBigSmoke() {
     glColor3f(0.1647f, 0.2509f, 0.1412f);
     glPushMatrix();
     glTranslatef(-bodySize / 1.5, legSize * 3 + bodySize - (legSize * 3) / 2, 0);
-    glRotatef(45.0f, 1.0f, 0.0f, 0.0f);
+    glRotatef(-45.0f, 1.0f, 0.0f, 0.0f);
     glScalef(1.0f, 3.0f, 1.0f);
     glutSolidCube(legSize);
     glPopMatrix();
@@ -223,7 +256,7 @@ void drawBigSmoke() {
     glColor3f(0.1647f, 0.2509f, 0.1412f);
     glPushMatrix();
     glTranslatef(bodySize / 1.5, legSize * 3 + bodySize - (legSize * 3) / 2, 0);
-    glRotatef(45.0f, 1.0f, 0.0f, 0.0f);
+    glRotatef(-45.0f, 1.0f, 0.0f, 0.0f);
     glScalef(1.0f, 3.0f, 1.0f);
     glutSolidCube(legSize);
     glPopMatrix();
@@ -233,6 +266,92 @@ void drawBigSmoke() {
     glPopMatrix();
     glColor3f(1, 1, 1);
 }
+
+void drawBurger() {
+    float bunScaleFactor = 0.15f;
+    float pattySize = 1.0f;
+    float cheeseSize = 1.8f;
+    
+    float rotationFloat = rotation;
+    
+    glPushMatrix();
+    glTranslatef(1, upDown, -3.5); // testing
+    glRotatef(rotationFloat, 0, 1, 0);
+    glScalef(bunScaleFactor, bunScaleFactor, bunScaleFactor);
+    
+    // Bottom Bun
+    
+    glColor3f(0.4745f, 0.3216f, 0.0322f);
+    glPushMatrix();
+    GLdouble eqn[4] = {0.0, -1.0, 0.0, 0.0};
+    glClipPlane(GL_CLIP_PLANE0, eqn);
+    glEnable(GL_CLIP_PLANE0);
+    glutSolidSphere(1, 100, 100);
+    glDisable(GL_CLIP_PLANE0);
+    glPopMatrix();
+    glColor3f(1, 1, 1);
+    
+    // Patty
+    
+    glColor3f(0.1608f, 0.0556f, 0.0f);
+    glPushMatrix();
+    GLUquadric* quad = gluNewQuadric();
+    glTranslatef(0, 0, 0);
+    glRotatef(-90, 1, 0, 0);
+    gluCylinder(quad, pattySize, pattySize, 0.5, 50, 50);
+    glPopMatrix();
+    glColor3f(1, 1, 1);
+    
+    // Tomato
+    
+    glColor3f(0.5137f, 0.0392f, 0.0235f);
+    glPushMatrix();
+    GLUquadric* quad1 = gluNewQuadric();
+    glTranslatef(0, 0.5, 0);
+    glRotatef(-90, 1, 0, 0);
+    gluCylinder(quad1, pattySize, pattySize, 0.2, 50, 50);
+    glPopMatrix();
+    glColor3f(1, 1, 1);
+    
+    // Lettuce
+    
+    glColor3f(0.5647f, 0.9333f, 0.5647f);
+    glPushMatrix();
+    GLUquadric* quad2 = gluNewQuadric();
+    glTranslatef(0, 0.7, 0);
+    glRotatef(-90, 1, 0, 0);
+    gluCylinder(quad2, pattySize, pattySize, 0.2, 50, 50);
+    glPopMatrix();
+    glColor3f(1, 1, 1);
+    
+    // Cheese
+    
+    glColor3f(0.9647f, 0.5333f, 0.0824f);
+    glPushMatrix();
+    glTranslatef(0, 1, 0);
+    glRotatef(45, 0, 1, 0);
+    glScalef(1.0f, 0.1f, 1.0f);
+    glutSolidCube(cheeseSize);
+    glPopMatrix();
+    glColor3f(1, 1, 1);
+    
+    // Top Bun
+    
+    glColor3f(0.4745f, 0.3216f, 0.0322f);
+    glPushMatrix();
+    glTranslatef(0, 0.6 + pattySize / 2, 0);
+    GLdouble eqn1[4] = {0.0, 1.0, 0.0, 0.0};
+    glClipPlane(GL_CLIP_PLANE0, eqn1);
+    glEnable(GL_CLIP_PLANE0);
+    glutSolidSphere(1, 100, 100);
+    glDisable(GL_CLIP_PLANE0);
+    glPopMatrix();
+    glColor3f(1, 1, 1);
+    
+    glPopMatrix();
+    glColor3f(1, 1, 1);
+}
+
 
 void setupLights() {
     GLfloat ambientMaterial[] = { 0.7f, 0.7f, 0.7f, 1.0f };
@@ -279,7 +398,10 @@ void Display() {
     drawGenericBoundary('b');
     drawGenericBoundary('l');
     drawGenericBoundary('r');
+    drawGenericBoundary('e');
     drawBigSmoke();
+    
+    drawBurger();
 
     glFlush();
 }
@@ -340,17 +462,17 @@ void Keyboard(unsigned char key, int x, int y) {
 }
 
 void specialKeys(int key, int x, int y) {
-    const float step = 0.25f;
+    const float step = 0.5f;
     const float playerWidth = 0.25;
 
-    float leftBoundary = 0.0f + playerWidth;
-    float rightBoundary = 2.0f - playerWidth;
+    float leftBoundary = -3.025f + playerWidth;
+    float rightBoundary = 5.025f - playerWidth;
     float startBoundary = 5.5f;
     float endBoundary = -4.0f + playerWidth;
 
     switch (key) {
         case GLUT_KEY_LEFT:
-            playerRotation = 90.0f;
+            playerRotation = -90.0f;
             if (lastKey == 'u' && abs(playerZ - endBoundary) <= 0.167) {
                 playerZ = endBoundary + 0.167;
             }
@@ -362,7 +484,7 @@ void specialKeys(int key, int x, int y) {
             }
             break;
         case GLUT_KEY_RIGHT:
-            playerRotation = -90.0f;
+            playerRotation = 90.0f;
             if (lastKey == 'u' && abs(playerZ - endBoundary) <= 0.167) {
                 playerZ = endBoundary + 0.167;
             }
@@ -408,6 +530,18 @@ void specialKeys(int key, int x, int y) {
     glutPostRedisplay();
 }
 
+void anim() {
+    rotation += 10;
+    
+    upDown += increment;
+    
+    if (upDown <= 0.4 || upDown >= 0.6) {
+        increment *= -1;
+    }
+    
+    glutPostRedisplay();
+}
+
 
 int main(int argc, char** argv) {
     glutInit(&argc, argv);
@@ -419,6 +553,7 @@ int main(int argc, char** argv) {
     glutDisplayFunc(Display);
     glutKeyboardFunc(Keyboard);
     glutSpecialFunc(specialKeys);
+    glutIdleFunc(anim);
 
     glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB | GLUT_DEPTH);
     glClearColor(1.0f, 1.0f, 1.0f, 0.0f);
