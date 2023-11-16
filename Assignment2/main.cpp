@@ -17,6 +17,11 @@ char lastKey;
 int rotation = 0.0f;
 float upDown = 0.5f;
 float increment = 0.01f;
+bool legRotation = false;
+float legRotationLeft = 0.0f;
+float legRotationRight = 0.0f;
+float legRotationIncrement = 20.0f;
+int counter = 0;
 
 class Vector3f {
 public:
@@ -205,8 +210,71 @@ void drawBigSmoke() {
     glTranslatef(0.0f, 0.0f, -0.005);
     gluDisk(quad3, 0.0, 0.009, 50, 1);
     glPopMatrix();
+    glColor3f(1, 1, 1);
     
+    // Mouth
     
+    glColor3f(1, 1, 1);
+    GLUquadric* quad5 = gluNewQuadric();
+    glPushMatrix();
+    glTranslatef(0, -0.04 + legSize * 3 + bodySize + headSize / 2, headSize - 0.07);
+    glRotatef(90, 0.0f, 0.0f, 1.0f);
+    glScalef(1, 2, 1);
+    gluCylinder(quad5, 0.009, 0.009, 0.005, 50, 50);
+    glTranslatef(0.0f, 0.0f, 0.005);
+    gluDisk(quad5, 0.0, 0.009, 50, 1);
+    glTranslatef(0.0f, 0.0f, -0.005);
+    gluDisk(quad5, 0.0, 0.009, 50, 1);
+    glPopMatrix();
+    glColor3f(1, 1, 1);
+    
+    // Moustache & Goatee
+    
+    glColor3f(0, 0, 0);
+    glPushMatrix();
+    glTranslatef(0, -0.05 + legSize * 3 + bodySize + headSize / 2, headSize - 0.07);
+    glScalef(1.0f, 1.0f, 0.07f);
+    glutSolidCube(0.06);
+    glPopMatrix();
+    glColor3f(1, 1, 1);
+    
+    // Glasses
+    
+    // Right Lens
+    glColor3f(0, 0, 0);
+    glPushMatrix();
+    glTranslatef(0.03, 0.005 + legSize * 3 + bodySize + headSize / 2, headSize - 0.07);
+    glScalef(0.5f, 0.65f, 0.07f);
+    glutSolidCube(0.06);
+    glPopMatrix();
+    
+    // Left Lens
+    glPushMatrix();
+    glTranslatef(-0.03, 0.005 + legSize * 3 + bodySize + headSize / 2, headSize - 0.07);
+    glScalef(0.5f, 0.65f, 0.07f);
+    glutSolidCube(0.06);
+    glPopMatrix();
+    
+    // Middle Part
+    glPushMatrix();
+    glTranslatef(0, 0.005 + legSize * 3 + bodySize + headSize / 2, headSize - 0.07);
+    glScalef(1.0f, 0.15f, 0.07f);
+    glutSolidCube(0.06);
+    glPopMatrix();
+    
+    // Left Arm
+    glPushMatrix();
+    glTranslatef(-0.03, 0.005 + legSize * 3 + bodySize + headSize / 2, headSize - 0.07);
+    glScalef(1.8f, 0.15f, 0.07f);
+    glutSolidCube(0.06);
+    glPopMatrix();
+    
+    // Right Arm
+    glPushMatrix();
+    glTranslatef(0.03, 0.005 + legSize * 3 + bodySize + headSize / 2, headSize - 0.07);
+    glScalef(1.8f, 0.15f, 0.07f);
+    glutSolidCube(0.06);
+    glPopMatrix();
     glColor3f(1, 1, 1);
     
     // Body
@@ -218,14 +286,33 @@ void drawBigSmoke() {
     glPopMatrix();
     glColor3f(1, 1, 1);
     
+    // Buttons
+    
+    for (float i = -0.2; i <= 0.3; i += 0.1){
+        glColor3f(1, 1, 1);
+        GLUquadric* quad6 = gluNewQuadric();
+        glPushMatrix();
+        glTranslatef(0, i + legSize * 3 + bodySize / 2, bodySize - 0.25);
+        glRotatef(90, 0.0f, 0.0f, 1.0f);
+        glScalef(1, 1, 1);
+        gluCylinder(quad6, 0.009, 0.009, 0.005, 50, 50);
+        glTranslatef(0.0f, 0.0f, 0.005);
+        gluDisk(quad6, 0.0, 0.009, 50, 1);
+        glTranslatef(0.0f, 0.0f, -0.005);
+        gluDisk(quad5, 0.0, 0.009, 50, 1);
+        glPopMatrix();
+        glColor3f(1, 1, 1);
+    }
+    
     // Limbs
     
     // Left Leg
     
     glColor3f(0.1843f, 0.1686f, 0.1725f);
     glPushMatrix();
-    glTranslatef(-bodySize / 4, 0.25, 0);
-    glScalef(1.0f, 3.0f, 1.0f);
+    glTranslatef(-bodySize / 4, 0.5, 0);
+    glRotatef(legRotationLeft, 1, 0, 0);
+    glScalef(1.0f, 5.5f, 1.0f);
     glutSolidCube(legSize);
     glPopMatrix();
     glColor3f(1, 1, 1);
@@ -234,34 +321,80 @@ void drawBigSmoke() {
     
     glColor3f(0.1843f, 0.1686f, 0.1725f);
     glPushMatrix();
-    glTranslatef(bodySize / 4, 0.25, 0);
-    glScalef(1.0f, 3.0f, 1.0f);
+    glTranslatef(bodySize / 4, 0.5, 0);
+    glRotatef(legRotationRight, 1, 0, 0);
+    glScalef(1.0f, 5.5f, 1.0f);
     glutSolidCube(legSize);
     glPopMatrix();
     glColor3f(1, 1, 1);
     
-    // Left Arm
+    // Left Arm Top
     
     glColor3f(0.1647f, 0.2509f, 0.1412f);
     glPushMatrix();
     glTranslatef(-bodySize / 1.5, legSize * 3 + bodySize - (legSize * 3) / 2, 0);
     glRotatef(-45.0f, 1.0f, 0.0f, 0.0f);
-    glScalef(1.0f, 3.0f, 1.0f);
+    glTranslatef(0, 0.1, 0);
     glutSolidCube(legSize);
     glPopMatrix();
     glColor3f(1, 1, 1);
     
-    // Right Arm
+    // Left Arm Bottom
+    
+    glColor3f(0.2157f, 0.1804f, 0.0745f);
+    glPushMatrix();
+    glTranslatef(-bodySize / 1.5, legSize * 3 + bodySize - (legSize * 3) / 2, 0);
+    glRotatef(-45.0f, 1.0f, 0.0f, 0.0f);
+    glTranslatef(0, -0.1, 0);
+    glutSolidCube(legSize);
+    glPopMatrix();
+    glColor3f(1, 1, 1);
+    
+    // Left Arm Middle
+    
+    glColor3f(1, 1, 1);
+    glPushMatrix();
+    glTranslatef(-bodySize / 1.5, legSize * 3 + bodySize - (legSize * 3) / 2, 0);
+    glRotatef(-45.0f, 1.0f, 0.0f, 0.0f);
+    glTranslatef(0, 0, 0);
+    glScalef(1.0f, 0.2f, 1.0f);
+    glutSolidCube(legSize);
+    glPopMatrix();
+    glColor3f(1, 1, 1);
+    
+    // Right Arm Top
     
     glColor3f(0.1647f, 0.2509f, 0.1412f);
     glPushMatrix();
     glTranslatef(bodySize / 1.5, legSize * 3 + bodySize - (legSize * 3) / 2, 0);
     glRotatef(-45.0f, 1.0f, 0.0f, 0.0f);
-    glScalef(1.0f, 3.0f, 1.0f);
+    glTranslatef(0, 0.1, 0);
     glutSolidCube(legSize);
     glPopMatrix();
     glColor3f(1, 1, 1);
     
+    // Right Arm Bottom
+    
+    glColor3f(0.2157f, 0.1804f, 0.0745f);
+    glPushMatrix();
+    glTranslatef(bodySize / 1.5, legSize * 3 + bodySize - (legSize * 3) / 2, 0);
+    glRotatef(-45.0f, 1.0f, 0.0f, 0.0f);
+    glTranslatef(0, -0.1, 0);
+    glutSolidCube(legSize);
+    glPopMatrix();
+    glColor3f(1, 1, 1);
+    
+    // Right Arm Middle
+    
+    glColor3f(1, 1, 1);
+    glPushMatrix();
+    glTranslatef(bodySize / 1.5, legSize * 3 + bodySize - (legSize * 3) / 2, 0);
+    glRotatef(-45.0f, 1.0f, 0.0f, 0.0f);
+    glTranslatef(0, 0, 0);
+    glScalef(1.0f, 0.2f, 1.0f);
+    glutSolidCube(legSize);
+    glPopMatrix();
+    glColor3f(1, 1, 1);
     
     glPopMatrix();
     glColor3f(1, 1, 1);
@@ -473,6 +606,7 @@ void specialKeys(int key, int x, int y) {
     switch (key) {
         case GLUT_KEY_LEFT:
             playerRotation = -90.0f;
+            legRotation = true;
             if (lastKey == 'u' && abs(playerZ - endBoundary) <= 0.167) {
                 playerZ = endBoundary + 0.167;
             }
@@ -485,6 +619,7 @@ void specialKeys(int key, int x, int y) {
             break;
         case GLUT_KEY_RIGHT:
             playerRotation = 90.0f;
+            legRotation = true;
             if (lastKey == 'u' && abs(playerZ - endBoundary) <= 0.167) {
                 playerZ = endBoundary + 0.167;
             }
@@ -497,6 +632,7 @@ void specialKeys(int key, int x, int y) {
             break;
         case GLUT_KEY_UP:
             playerRotation = 180.0f;
+            legRotation = true;
             if (lastKey == 'r' && abs(playerX - rightBoundary) <= 0.167) {
                 playerX = rightBoundary - 0.167;
             }
@@ -512,6 +648,7 @@ void specialKeys(int key, int x, int y) {
             break;
         case GLUT_KEY_DOWN:
             playerRotation = 0.0f;
+            legRotation = true;
             if (lastKey == 'r' && abs(playerX - rightBoundary) <= 0.167) {
                 playerX = rightBoundary - 0.167;
             }
@@ -530,8 +667,17 @@ void specialKeys(int key, int x, int y) {
     glutPostRedisplay();
 }
 
+void specialKeyReleased(int key, int x, int y) {
+    if (key == GLUT_KEY_UP || key == GLUT_KEY_DOWN || key == GLUT_KEY_LEFT || key == GLUT_KEY_RIGHT) {
+        legRotation = false;
+        legRotationLeft = 0;
+        legRotationRight = 0;
+    }
+}
+
 void anim() {
     rotation += 10;
+    counter ++;
     
     upDown += increment;
     
@@ -539,9 +685,17 @@ void anim() {
         increment *= -1;
     }
     
+    if (legRotationLeft <= -20 || legRotationLeft >= 20) {
+        legRotationIncrement *= -1;
+    }
+    
+    if (legRotation && counter % 5 == 0) {
+        legRotationLeft += legRotationIncrement;
+        legRotationRight -= legRotationIncrement;
+    }
+    
     glutPostRedisplay();
 }
-
 
 int main(int argc, char** argv) {
     glutInit(&argc, argv);
@@ -553,6 +707,7 @@ int main(int argc, char** argv) {
     glutDisplayFunc(Display);
     glutKeyboardFunc(Keyboard);
     glutSpecialFunc(specialKeys);
+    glutSpecialUpFunc(specialKeyReleased);
     glutIdleFunc(anim);
 
     glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB | GLUT_DEPTH);
