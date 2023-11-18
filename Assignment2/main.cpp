@@ -1,14 +1,29 @@
 #define GL_SILENCE_DEPRECATION
+#define GLUT_KEY_ESCAPE 27
+#define DEG2RAD(a) (a * 0.0174532925)
+
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <GLUT/glut.h>
 #include <cmath>
+#include <string>
+#include <iostream>
+#include <random>
+#include <chrono>
 
-#define GLUT_KEY_ESCAPE 27
-#define DEG2RAD(a) (a * 0.0174532925)
+std::default_random_engine generator(static_cast<unsigned int>(std::chrono::system_clock::now().time_since_epoch().count()));
+
+struct Time {
+    int minutes;
+    int seconds;
+};
+
+std::vector<char> keys;
+std::vector<char> targetSequence = {'r', 'o', 'c', 'k', 'e', 't', 'm', 'a', 'n'};
 
 float playerX = 1.0f;
+float playerY = 0;
 float playerZ = 5.5f;
 float playerRotation = 180.0f;
 bool topView = false;
@@ -22,6 +37,29 @@ float legRotationLeft = 0.0f;
 float legRotationRight = 0.0f;
 float legRotationIncrement = 20.0f;
 int counter = 0;
+int burgers = 8;
+bool gameOver = false;
+float r = 1;
+float g = 1;
+float b = 1;
+bool cheatCode = false;
+bool jetpack = false;
+bool falling = false;
+bool displayCheatActivated = false;
+bool displayCheatDeactivated = false;
+int cheatTime1 = -1;
+int cheatTime2 = -1;
+float rotateFerris = 0.0f;
+
+Time secondsToMinutesAndSeconds(int totalSeconds) {
+    Time result;
+    result.minutes = totalSeconds / 60;
+    result.seconds = totalSeconds % 60;
+    return result;
+}
+
+int timeRemaining = 90;
+Time displayedTime = secondsToMinutesAndSeconds(timeRemaining);
 
 class Vector3f {
 public:
@@ -113,42 +151,161 @@ public:
 
 Camera camera;
 
-void drawGenericBoundary(char rotation) {
+void print(int x, int y, char* string, int font) {
+    int len, i;
+    glRasterPos2f(x, y);
+    len = (int) strlen(string);
+    for (i = 0; i < len; i++) {
+        if (font == 12) {
+            glutBitmapCharacter(GLUT_BITMAP_HELVETICA_12, string[i]);
+        } else if (font == 18) {
+            glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, string[i]);
+        } else if (font == 24) {
+            glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, string[i]);
+        }
+    }
+}
+
+void gameEnd(bool win) {
+    glPushMatrix();
+    glLoadIdentity();
+
+    glColor3f(1, 1, 1);
+    
+    std::string text;
+
+    if (win) {
+        text = "You Won!";
+    } else {
+        text = "You're out of time :(";
+    }
+
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    glLoadIdentity();
+    gluOrtho2D(0, 1600, 0, 1000);
+
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    glLoadIdentity();
+    
+    int textWidth = glutBitmapLength(GLUT_BITMAP_HELVETICA_18, (const unsigned char*)text.c_str());
+
+    print(800 - textWidth / 2, 491, const_cast<char*>(text.c_str()), 18);
+    
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
+    glMatrixMode(GL_MODELVIEW);
+    glPopMatrix();
+}
+
+
+void displayTime() {
+    std::string mins;
+    std::string secs;
+    
+    if (displayedTime.minutes <= 9) {
+        mins = "0" + std::to_string(displayedTime.minutes);
+    } else {
+        mins = std::to_string(displayedTime.minutes);
+    }
+
+    if (displayedTime.seconds <= 9) {
+        secs = "0" + std::to_string(displayedTime.seconds);
+    } else {
+        secs = std::to_string(displayedTime.seconds);
+    }
+
+    std::string text = mins + ":" + secs;
+
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    glLoadIdentity();
+    gluOrtho2D(0, 1600, 0, 1000);
+
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    glLoadIdentity();
+
+    int x = 1600 - 75;
+    int y = 1000 - 28;
+
+    if (timeRemaining <= 15) {
+        if (timeRemaining % 2 == 0) {
+            glColor3f(1.0f, 0.0f, 0.0f);
+        } else {
+            glColor3f(0.0f, 0.0f, 0.0f);
+        }
+    } else {
+        glColor3f(0.0f, 0.0f, 0.0f);
+    }
+
+    print(x, y, const_cast<char*>(text.c_str()), 18);
+    
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
+    glMatrixMode(GL_MODELVIEW);
+    glPopMatrix();
+}
+
+
+void drawBoundaries() {
     float thickness = 0.05f;
     float width = 2.0f;
     float length = 10.0f;
-    glPushMatrix();
-    switch (rotation) {
-    case 'b':
-        glTranslatef(0.5f * width, 0.5f * thickness, 0.5f * width);
-        glScalef(width * 4, thickness, length);
-        glColor3f(1.0f, 0.0f, 0.0f);
-        break;
-    case 'r':
-        glTranslatef(width + 1.5 * width + 0.025, 1, 0.5f * width);
-        glRotatef(90, 0, 0, 1.0f);
-        glScalef(width, thickness, length);
-        break;
-    case 'l':
-        glTranslatef(-width - 0.5f * width - 0.025, 1, 0.5f * width);
-        glRotatef(90, 0, 0, 1.0f);
-        glScalef(width, thickness, length);
-        break;
-    case 'e':
-        glTranslatef(1, 1, -4);
-        glRotatef(90, 0, 0, 1);
-        glRotatef(90, 1, 0, 0);
-        glScalef(width, thickness, length-1.90);
-        break;
-    default:
-        break;
-    }
     
+    glColor3f(1, 1, 1);
+    glPushMatrix();
+    glTranslatef(0.5f * width, 0.5f * thickness, 0.5f * width);
+    glScalef(width * 4, thickness, length);
     glutSolidCube(1);
     glPopMatrix();
-    glColor3f(1.0f, 1.0f, 1.0f);
+    
+    glColor3f(r, g, b);
+    glPushMatrix();
+    glTranslatef(width + 1.5 * width + 0.025, 1, 0.5f * width);
+    glRotatef(90, 0, 0, 1.0f);
+    glScalef(width, thickness, length);
+    glutSolidCube(1);
+    glPopMatrix();
+    
+    glPushMatrix();
+    glTranslatef(-width - 0.5f * width - 0.025, 1, 0.5f * width);
+    glRotatef(90, 0, 0, 1.0f);
+    glScalef(width, thickness, length);
+    glutSolidCube(1);
+    glPopMatrix();
+    
+    glPushMatrix();
+    glTranslatef(1, 1, -4);
+    glRotatef(90, 0, 0, 1);
+    glRotatef(90, 1, 0, 0);
+    glScalef(width, thickness, length-1.90);
+    glutSolidCube(1);
+    glPopMatrix();
+    
+    glPushMatrix();
+    glTranslatef(5, 2.25, -4);
+    glutSolidCube(0.5);
+    glPopMatrix();
+    
+    glPushMatrix();
+    glTranslatef(-3, 2.25, -4);
+    glutSolidCube(0.5);
+    glPopMatrix();
+    
+    glPushMatrix();
+    glTranslatef(5, 2.25, 6);
+    glutSolidCube(0.5);
+    glPopMatrix();
+    
+    glPushMatrix();
+    glTranslatef(-3, 2.25, 6);
+    glutSolidCube(0.5);
+    glPopMatrix();
+    
+    glColor3f(1, 1, 1);
 }
-
 
 void drawBigSmoke() {
     float bodySize = 0.5;
@@ -156,7 +313,7 @@ void drawBigSmoke() {
     float hatSize = 0.155;
     float legSize = bodySize / 3;
     glPushMatrix();
-    glTranslatef(playerX, 0, playerZ);
+    glTranslatef(playerX, playerY, playerZ);
     glRotatef(playerRotation, 0.0f, 1.0f, 0.0f);
     
     // Hat
@@ -311,7 +468,9 @@ void drawBigSmoke() {
     glColor3f(0.1843f, 0.1686f, 0.1725f);
     glPushMatrix();
     glTranslatef(-bodySize / 4, 0.5, 0);
-    glRotatef(legRotationLeft, 1, 0, 0);
+    if (playerY == 0) {
+        glRotatef(legRotationLeft, 1, 0, 0);
+    }
     glScalef(1.0f, 5.5f, 1.0f);
     glutSolidCube(legSize);
     glPopMatrix();
@@ -322,7 +481,9 @@ void drawBigSmoke() {
     glColor3f(0.1843f, 0.1686f, 0.1725f);
     glPushMatrix();
     glTranslatef(bodySize / 4, 0.5, 0);
-    glRotatef(legRotationRight, 1, 0, 0);
+    if (playerY == 0){
+        glRotatef(legRotationRight, 1, 0, 0);
+    }
     glScalef(1.0f, 5.5f, 1.0f);
     glutSolidCube(legSize);
     glPopMatrix();
@@ -485,6 +646,200 @@ void drawBurger() {
     glColor3f(1, 1, 1);
 }
 
+void drawLamps() {
+    
+    for (int i = 0; i < 2; i ++) {
+        glPushMatrix();
+        if (i == 0) {
+            glTranslatef(-1.5, 0, -3);
+        } else {
+            glTranslatef(-1.5, 0, 4);
+        }
+        
+        glColor3f(0.41f, 0.34f, 0.20f);
+        glPushMatrix();
+        glTranslatef(0, 1.25, 0);
+        glScalef(0.18f, 2.4f, 0.18f);
+        glutSolidCube(1);
+        glPopMatrix();
+
+        glColor3f(0.41f, 0.34f, 0.20f);
+        glPushMatrix();
+        glTranslatef(0, 2.4f, 0);
+        glScalef(0.85f, 0.18f, 0.18f);
+        glutSolidCube(1);
+        glPopMatrix();
+        
+        glColor3f(0.41f, 0.34f, 0.20f);
+        glPushMatrix();
+        glTranslatef(-0.375, 2.25f, 0);
+        glScalef(0.05f, 0.15f, 0.05f);
+        glutSolidCube(1);
+        glPopMatrix();
+        
+        glColor3f(0.41f, 0.34f, 0.20f);
+        glPushMatrix();
+        glTranslatef(0.375, 2.25f, 0);
+        glScalef(0.05f, 0.15f, 0.05f);
+        glutSolidCube(1);
+        glPopMatrix();
+        
+        glColor3f(0.2078f, 0.2196f, 0.2549f);
+        glPushMatrix();
+        glTranslatef(0.375, 2.15f, 0);
+        glutSolidSphere(0.1, 50, 50);
+        glPopMatrix();
+        
+        glColor3f(0.2078f, 0.2196f, 0.2549f);
+        glPushMatrix();
+        glTranslatef(-0.375, 2.15f, 0);
+        glutSolidSphere(0.1, 50, 50);
+        glPopMatrix();
+        
+        glPopMatrix();
+    }
+    glColor3f(1, 1, 1);
+}
+
+void drawFerrisWheel() {
+    float legsRadius = 0.05f;
+    
+    glPushMatrix();
+    glTranslatef(0.2, 1, -2.8);
+    glRotatef(60, 0, 1, 0);
+    glScalef(-2, 2, 2);
+    
+    // Stand
+    
+    glColor3f(0, 0, 0);
+    glPushMatrix();
+    glTranslatef(-0.12, -0.22, 1.205);
+    glScalef(0.5, 0.5, 2.5);
+    glutSolidCube(1);
+    glPopMatrix();
+    glColor3f(1, 1, 1);
+    
+    // Legs
+    
+    glColor3f(1, 1, 1);
+    glPushMatrix();
+    GLUquadric* quad1 = gluNewQuadric();
+    glTranslatef(0.05, 0.05, 0.6);
+    glRotatef(-90, 1, 0, 0);
+    glRotatef(15, 1, 0, 0);
+    gluCylinder(quad1, legsRadius, legsRadius, 1.8, 50, 50);
+    glPopMatrix();
+    
+    glPushMatrix();
+    GLUquadric* quad2 = gluNewQuadric();
+    glTranslatef(0.05, 0.05, 1.8);
+    glRotatef(-90, 1, 0, 0);
+    glRotatef(-15, 1, 0, 0);
+    gluCylinder(quad2, legsRadius, legsRadius, 1.8, 50, 50);
+    glPopMatrix();
+    
+    glPushMatrix();
+    GLUquadric* quad4 = gluNewQuadric();
+    glTranslatef(0, 1.5, 1.2);
+    glRotatef(90, 0, 1, 0);
+    glScalef(14, 14, 0.05);
+    gluCylinder(quad4, legsRadius, legsRadius, 1.8, 50, 50);
+    glPopMatrix();
+
+    glPushMatrix();
+    GLUquadric* quad5 = gluNewQuadric();
+    glTranslatef(0, 1.5, 1.2);
+    glRotatef(90, 0, 1, 0);
+    glScalef(21, 21, 0.05);
+    gluCylinder(quad5, legsRadius, legsRadius, 1.8, 50, 50);
+    glPopMatrix();
+
+    glPushMatrix();
+    GLUquadric* quad6 = gluNewQuadric();
+    glTranslatef(0, 1.5, 1.2);
+    glRotatef(90, 0, 1, 0);
+    glScalef(28, 28, 0.05);
+    gluCylinder(quad6, legsRadius, legsRadius, 1.8, 50, 50);
+    glPopMatrix();
+    
+    glPushMatrix();
+    GLUquadric* quad7 = gluNewQuadric();
+    glTranslatef(0.05, 0.05, 1.2);
+    glRotatef(-90, 1, 0, 0);
+    gluCylinder(quad7, legsRadius, legsRadius, 1.8, 50, 50);
+    glPopMatrix();
+    
+    // Spinning Part
+    
+    glPushMatrix();
+    glTranslatef(0.35, 1.5, 1.2);
+    glRotatef(rotateFerris, 1, 0, 0);
+    glTranslatef(-0.35, -1.5, -1.2);
+    
+    // Center
+    
+    glPushMatrix();
+    GLUquadric* quad3 = gluNewQuadric();
+    glTranslatef(0, 1.5, 1.2);
+    glRotatef(90, 0, 1, 0);
+    glScalef(7, 7, 0.05);
+    gluDisk(quad3, 0, legsRadius, 50, 50);
+    gluCylinder(quad3, legsRadius, legsRadius, 8.2, 50, 50);
+    glPushMatrix();
+    glTranslatef(0, 0, 8.2);
+    gluDisk(quad3, 0, legsRadius, 50, 50);
+    glPopMatrix();
+    glPopMatrix();
+    
+    // Arms
+    
+    glColor3f(0, 0, 1);
+    glPushMatrix();
+    GLUquadric* quad8 = gluNewQuadric();
+    glTranslatef(0.35, 1.5, 0);
+    gluCylinder(quad8, legsRadius, legsRadius, 2.4, 50, 50);
+    glPopMatrix();
+    
+    glPushMatrix();
+    GLUquadric* quad9 = gluNewQuadric();
+    glTranslatef(0.35, 1.5 - 1.1, 1.2);
+    glRotatef(-90, 1, 0, 0);
+    gluCylinder(quad9, legsRadius, legsRadius, 2.2, 50, 50);
+    glPopMatrix();
+    
+    // Spheres
+    
+    glColor3f(0.4745f, 0.3216f, 0.0322f);
+    glPushMatrix();
+    glTranslatef(0.35, 1.6, -0.18);
+    glScalef(0.2, 0.4, 0.2);
+    glutSolidSphere(1, 100, 100);
+    glPopMatrix();
+    
+    glPushMatrix();
+    glTranslatef(0.35, 1.6, 2.58);
+    glScalef(0.2, 0.4, 0.2);
+    glutSolidSphere(1, 100, 100);
+    glPopMatrix();
+    
+    glPushMatrix();
+    glTranslatef(0.35, 3, 1.2);
+    glScalef(0.2, 0.4, 0.2);
+    glutSolidSphere(1, 100, 100);
+    glPopMatrix();
+    
+    glPushMatrix();
+    glTranslatef(0.35, 0, 1.2);
+    glScalef(0.2, 0.4, 0.2);
+    glutSolidSphere(1, 100, 100);
+    glPopMatrix();
+    
+    glPopMatrix();
+    
+    glColor3f(1, 1, 1);
+    glPopMatrix();
+}
+
 
 void setupLights() {
     GLfloat ambientMaterial[] = { 0.7f, 0.7f, 0.7f, 1.0f };
@@ -522,75 +877,213 @@ void setupCamera() {
     camera.look();
 }
 
+bool checkRocketMan() {
+    bool containsSequence = false;
+       for (size_t i = 0; i <= keys.size() - targetSequence.size(); ++i) {
+           bool isMatch = true;
+           for (size_t j = 0; j < targetSequence.size(); ++j) {
+               if (keys[i + j] != targetSequence[j]) {
+                   isMatch = false;
+                   break;
+               }
+           }
+           if (isMatch) {
+               containsSequence = true;
+               break;
+           }
+       }
+
+    return containsSequence;
+}
+
+void displayCheatStatus() {
+    std::string text;
+    if (displayCheatActivated) {
+        text = "Cheated Activated!";
+    } else {
+        text = "Cheated Deactivated!";
+    }
+
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    glLoadIdentity();
+    gluOrtho2D(0, 1600, 0, 1000);
+
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    glLoadIdentity();
+
+    int x = 40;
+    int y = 950;
+    
+    
+    print(x, y, const_cast<char*>(text.c_str()), 18);
+    
+    glColor3f(1, 1, 1);
+    glBegin(GL_QUADS);
+    glVertex2f(x - 5, y + 25);
+    glVertex2f(x + 180, y + 25);
+    glVertex2f(x + 180, y - 15);
+    glVertex2f(x - 5, y - 15);
+    glEnd();
+    
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
+    glMatrixMode(GL_MODELVIEW);
+    glPopMatrix();
+}
+
+
 void Display() {
     setupCamera();
     setupLights();
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     
-    drawGenericBoundary('b');
-    drawGenericBoundary('l');
-    drawGenericBoundary('r');
-    drawGenericBoundary('e');
-    drawBigSmoke();
-    
-    drawBurger();
-
+    if (timeRemaining <= 0) {
+        gameEnd(burgers == 0);
+    } else {
+        displayTime();
+        drawBoundaries();
+        drawBigSmoke();
+        drawBurger();
+        drawLamps();
+        drawFerrisWheel();
+    }
+    if (displayCheatActivated || displayCheatDeactivated) {
+        displayCheatStatus();
+    }
     glFlush();
 }
 
+void timer(int value) {
+    if (timeRemaining > 0) {
+        timeRemaining--;
+        displayedTime = secondsToMinutesAndSeconds(timeRemaining);
+    }
+    
+    if (timeRemaining % 3 == 0) {
+        float min = 0;
+        float max = 1;
+        std::uniform_real_distribution<float> distribution(min, max);
+        r = distribution(generator);
+        g = distribution(generator);
+        b = distribution(generator);
+    }
+    
+    if (timeRemaining > 0) {
+        glutTimerFunc(1000, timer, 0);
+    }
+    
+    if (jetpack) {
+        displayCheatDeactivated = false;
+        if (cheatTime1 - timeRemaining >= 5) {
+            displayCheatActivated = false;
+        }
+    }
+    if (!jetpack) {
+        displayCheatActivated = false;
+        if (cheatTime2 - timeRemaining >= 5) {
+            displayCheatDeactivated = false;
+        }
+    }
+    
+    glutPostRedisplay();
+}
+
 void Keyboard(unsigned char key, int x, int y) {
+    float flyingStep = 0.1f;
     float d = 0.5;
     float a = 1.0;
-    switch (key) {
-    case 'w':
-        camera.moveY(d);
-        break;
-    case 's':
-        camera.moveY(-d);
-        break;
-    case 'a':
-        camera.moveX(d);
-        break;
-    case 'd':
-        camera.moveX(-d);
-        break;
-    case 'q':
-        camera.moveZ(d);
-        break;
-    case 'e':
-        camera.moveZ(-d);
-        break;
-    case 'm':
-        if (!topView && !sideView) {
-            camera = Camera(0.0f, 10.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f);
-            topView = true;
-        } else if (topView) {
-            camera = Camera(10.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f);
-            topView = false;
-            sideView = true;
-        } else if (sideView) {
-            camera = Camera(0.0f, 0.0f, 10.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f);
-            sideView = false;
+    
+    if (key == 9) {
+        cheatCode = !cheatCode;
+        std::cout << cheatCode << std::endl;
+    }
+    if (!cheatCode) {
+        switch (key) {
+        case 'w':
+            camera.moveY(d);
+            break;
+        case 's':
+            camera.moveY(-d);
+            break;
+        case 'a':
+            camera.moveX(d);
+            break;
+        case 'd':
+            camera.moveX(-d);
+            break;
+        case 'q':
+            camera.moveZ(d);
+            break;
+        case 'e':
+            camera.moveZ(-d);
+            break;
+        case 'm':
+            if (!topView && !sideView) {
+                camera = Camera(0.0f, 10.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f);
+                topView = true;
+            } else if (topView) {
+                camera = Camera(10.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f);
+                topView = false;
+                sideView = true;
+            } else if (sideView) {
+                camera = Camera(0.0f, 0.0f, 10.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f);
+                sideView = false;
+            }
+            break;
+                
+        case 'i':
+            camera.rotateX(a);
+            break;
+        case 'k':
+            camera.rotateX(-a);
+            break;
+        case 'j':
+            camera.rotateY(a);
+            break;
+        case 'l':
+            camera.rotateY(-a);
+            break;
+        case ' ':
+                if (jetpack) {
+                    playerY += flyingStep;
+                }
+            break;
+        case 'z':
+            if (jetpack) {
+                if (playerY - flyingStep > 0) {
+                    playerY -= flyingStep;
+                } else {
+                    playerY = 0;
+                }
+            }
+            break;
+        case 13:
+            jetpack = false;
+            falling = true;
+            displayCheatDeactivated = true;
+            cheatTime2 = timeRemaining;
+            break;
         }
-        break;
-            
-    case 'i':
-        camera.rotateX(a);
-        break;
-    case 'k':
-        camera.rotateX(-a);
-        break;
-    case 'j':
-        camera.rotateY(a);
-        break;
-    case 'l':
-        camera.rotateY(-a);
-        break;
-    case 27:
+    } else {
+        keys.push_back(key);
+        if (keys.size() >= 9) {
+            if (checkRocketMan()) {
+                keys.clear();
+                jetpack = true;
+                cheatCode = false;
+                displayCheatActivated = true;
+                cheatTime1 = timeRemaining;
+            }
+        }
+    }
+    
+    if (key == 27) {
         exit(EXIT_SUCCESS);
     }
-
+    
     glutPostRedisplay();
 }
 
@@ -606,13 +1099,13 @@ void specialKeys(int key, int x, int y) {
     switch (key) {
         case GLUT_KEY_LEFT:
             playerRotation = -90.0f;
-            legRotation = true;
             if (lastKey == 'u' && abs(playerZ - endBoundary) <= 0.167) {
                 playerZ = endBoundary + 0.167;
             }
             lastKey = 'l';
             if (playerX - step >= leftBoundary) {
                 playerX -= step;
+                legRotation = true;
             } else {
                 playerX = leftBoundary;
             }
@@ -626,6 +1119,7 @@ void specialKeys(int key, int x, int y) {
             lastKey = 'r';
             if (playerX + step <= rightBoundary) {
                 playerX += step;
+                legRotation = true;
             } else {
                 playerX = rightBoundary;
             }
@@ -642,6 +1136,7 @@ void specialKeys(int key, int x, int y) {
             lastKey = 'u';
             if (playerZ - step >= endBoundary) {
                 playerZ -= step;
+                legRotation = true;
             } else {
                 playerZ = endBoundary;
             }
@@ -658,6 +1153,7 @@ void specialKeys(int key, int x, int y) {
             lastKey = 'd';
             if (playerZ + step <= startBoundary) {
                 playerZ += step;
+                legRotation = true;
             } else {
                 playerZ = startBoundary;
             }
@@ -677,6 +1173,7 @@ void specialKeyReleased(int key, int x, int y) {
 
 void anim() {
     rotation += 10;
+    rotateFerris += 10;
     counter ++;
     
     upDown += increment;
@@ -694,6 +1191,15 @@ void anim() {
         legRotationRight -= legRotationIncrement;
     }
     
+    if (falling) {
+        if (playerY <= 0) {
+            falling = false;
+            playerY = 0;
+        } else {
+            playerY -= 0.05;
+        }
+    }
+    
     glutPostRedisplay();
 }
 
@@ -709,6 +1215,7 @@ int main(int argc, char** argv) {
     glutSpecialFunc(specialKeys);
     glutSpecialUpFunc(specialKeyReleased);
     glutIdleFunc(anim);
+    glutTimerFunc(1000, timer, 0);
 
     glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB | GLUT_DEPTH);
     glClearColor(1.0f, 1.0f, 1.0f, 0.0f);
@@ -721,7 +1228,6 @@ int main(int argc, char** argv) {
     glEnable(GL_COLOR_MATERIAL);
 
     glShadeModel(GL_SMOOTH);
-
     glutMainLoop();
     
     return 0;
