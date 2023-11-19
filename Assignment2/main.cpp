@@ -268,7 +268,7 @@ void drawBoundaries() {
     float width = 2.0f;
     float length = 10.0f;
     
-    glColor3f(1, 1, 1);
+    glColor3f(0, 0.4, 0);
     glPushMatrix();
     glTranslatef(0.5f * width, 0.5f * thickness, 0.5f * width);
     glScalef(width * 4, thickness, length);
@@ -1125,7 +1125,7 @@ void drawSeeSaw() {
     
     // Arms
     
-    glColor3f(0.5, 0.5, 0.5);    
+    glColor3f(0.5, 0.5, 0.5);
     glPushMatrix();
     glTranslatef(0.75, 0.15 + 0.5 + 0.2, 0);
     glScalef(0.1, 0.3, 0.5);
@@ -1346,6 +1346,15 @@ void Keyboard(unsigned char key, int x, int y) {
                 sideView = false;
             }
             break;
+        case 'v':
+            camera = Camera(0.0f, 10.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f);
+            break;
+        case 'b':
+            camera = Camera(10.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f);
+                break;
+        case 'n':
+            camera = Camera(0.0f, 0.0f, 10.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f);
+            break;
                 
         case 'i':
             camera.rotateX(a);
@@ -1360,7 +1369,10 @@ void Keyboard(unsigned char key, int x, int y) {
             camera.rotateY(-a);
             break;
         case 'o':
-            objectsAnimate = !objectsAnimate;
+            objectsAnimate = true;
+            break;
+        case 'p':
+            objectsAnimate = false;
             break;
         case ' ':
             if (jetpack) {
