@@ -50,6 +50,21 @@ bool displayCheatDeactivated = false;
 int cheatTime1 = -1;
 int cheatTime2 = -1;
 float rotateFerris = 0.0f;
+float carMovement = 2.0f;
+float carDirection = 1;
+float lampLength1 = 1;
+float lampLengthDirection1 = 1;
+float lampLength2 = 1;
+float lampLengthDirection2 = 1;
+bool objectsAnimate = false;
+bool lamp1ReachedPeak = false;
+float curtain1Rotation = -90.0f;
+float curtain2Rotation = -90.0f;
+int curtain1RotationDirection = 1;
+int curtain2RotationDirection = 1;
+bool openedCurtain1 = false;
+float seeSawRotation = 0.0f;
+int seeSawDirection = 1;
 
 Time secondsToMinutesAndSeconds(int totalSeconds) {
     Time result;
@@ -95,7 +110,6 @@ public:
         return Vector3f(y * v.z - z * v.y, z * v.x - x * v.z, x * v.y - y * v.x);
     }
 };
-
 
 class Camera {
 public:
@@ -651,9 +665,11 @@ void drawLamps() {
     for (int i = 0; i < 2; i ++) {
         glPushMatrix();
         if (i == 0) {
-            glTranslatef(-1.5, 0, -3);
+            glTranslatef(-2, 0, -3);
+            glScalef(1, lampLength1, 1);
         } else {
-            glTranslatef(-1.5, 0, 4);
+            glTranslatef(-2, 0, 5);
+            glScalef(1, lampLength2, 1);
         }
         
         glColor3f(0.41f, 0.34f, 0.20f);
@@ -793,7 +809,7 @@ void drawFerrisWheel() {
     
     // Arms
     
-    glColor3f(0, 0, 1);
+    glColor3f(0.2745f, 0.1255f, 0.1765f);
     glPushMatrix();
     GLUquadric* quad8 = gluNewQuadric();
     glTranslatef(0.35, 1.5, 0);
@@ -840,6 +856,302 @@ void drawFerrisWheel() {
     glPopMatrix();
 }
 
+void drawCar() {
+    float wheelRadius = 0.05;
+    float wheelLength = 3.4;
+    
+    glPushMatrix();
+    glTranslatef(4.2, 0, carMovement);
+    glRotatef(-90, 0, 1, 0);
+    glScalef(0.5, 0.5, 0.5);
+    
+    // Car wheel 1
+    glColor3f(0, 0, 0);
+    glPushMatrix();
+    glTranslatef(0, wheelRadius * 9, -0.75);
+
+    GLUquadric* quad1 = gluNewQuadric();
+    glTranslatef(-0.8, 0, 1.2);
+    glRotatef(0, 0, 1, 0);
+    glScalef(7, 7, 0.1);
+    gluDisk(quad1, 0, wheelRadius, 50, 50);
+    gluCylinder(quad1, wheelRadius, wheelRadius, wheelLength, 50, 50);
+    glPushMatrix();
+    glTranslatef(0, 0, wheelLength);
+    gluDisk(quad1, 0, wheelRadius, 50, 50);
+    glPopMatrix();
+
+    glColor3f(0.7529f, 0.7529f, 0.7529f);
+    GLUquadric* smallDiskQuad1 = gluNewQuadric();
+    glTranslatef(0, 0, wheelLength + 0.1);
+    gluDisk(smallDiskQuad1, 0, wheelRadius * 0.5, 50, 50);
+
+    glPopMatrix();
+
+    // Car wheel 2
+    glColor3f(0, 0, 0);
+    glPushMatrix();
+    glTranslatef(0.8, wheelRadius * 9, -0.75);
+
+    // Wheel body
+    GLUquadric* quad2 = gluNewQuadric();
+    glTranslatef(0, 0, 1.2);
+    glRotatef(0, 0, 1, 0);
+    glScalef(7, 7, 0.1);
+    gluDisk(quad2, 0, wheelRadius, 50, 50);
+    gluCylinder(quad2, wheelRadius, wheelRadius, wheelLength, 50, 50);
+    glPushMatrix();
+    glTranslatef(0, 0, wheelLength);
+    gluDisk(quad2, 0, wheelRadius, 50, 50);
+    glPopMatrix();
+
+    glColor3f(0.7529f, 0.7529f, 0.7529f);
+    GLUquadric* smallDiskQuad2 = gluNewQuadric();
+    glTranslatef(0, 0, wheelLength + 0.1);
+    gluDisk(smallDiskQuad2, 0, wheelRadius * 0.5, 50, 50);
+
+    glPopMatrix();
+
+    // Car wheel 3
+    glColor3f(0, 0, 0);
+    glPushMatrix();
+    glTranslatef(0, wheelRadius * 9, -0.5);
+    glScalef(1, 1, -1);
+    
+    // Wheel body
+    GLUquadric* quad3 = gluNewQuadric();
+    glTranslatef(-0.8, 0, 0);
+    glRotatef(0, 0, 1, 0);
+    glScalef(7, 7, 0.1);
+    gluDisk(quad3, 0, wheelRadius, 50, 50);
+    gluCylinder(quad3, wheelRadius, wheelRadius, wheelLength, 50, 50);
+    glPushMatrix();
+    glTranslatef(0, 0, wheelLength);
+    gluDisk(quad3, 0, wheelRadius, 50, 50);
+    glPopMatrix();
+
+    glColor3f(0.7529f, 0.7529f, 0.7529f);
+    GLUquadric* smallDiskQuad3 = gluNewQuadric();
+    glTranslatef(0, 0, wheelLength + 0.1);
+    gluDisk(smallDiskQuad3, 0, wheelRadius * 0.5, 50, 50);
+
+    glPopMatrix();
+
+    // Car wheel 4
+    glColor3f(0, 0, 0);
+    glPushMatrix();
+    glTranslatef(0.8, wheelRadius * 9, -1.25);
+    glScalef(1, 1, -1);
+
+    // Wheel body
+    GLUquadric* quad4 = gluNewQuadric();
+    glTranslatef(0, 0, -0.75);
+    glRotatef(0, 0, 1, 0);
+    glScalef(7, 7, 0.1);
+    gluDisk(quad4, 0, wheelRadius, 50, 50);
+    gluCylinder(quad4, wheelRadius, wheelRadius, wheelLength, 50, 50);
+    glPushMatrix();
+    glTranslatef(0, 0, wheelLength);
+    gluDisk(quad4, 0, wheelRadius, 50, 50);
+    glPopMatrix();
+
+    glColor3f(0.7529f, 0.7529f, 0.7529f);
+    GLUquadric* smallDiskQuad4 = gluNewQuadric();
+    glTranslatef(0, 0, wheelLength + 0.1);
+    gluDisk(smallDiskQuad4, 0, wheelRadius * 0.5, 50, 50);
+    glPopMatrix();
+    
+    // Car Body
+    
+    glColor3f(0.7333f, 0.1608f, 0.2431f);
+    glPushMatrix();
+    glTranslatef(0, 1 + (wheelRadius * 6), 0);
+    glScalef(2.8, 1, 1.8);
+    glutSolidCube(1);
+    glPopMatrix();
+    
+    glPushMatrix();
+    glTranslatef(0, 1 + (wheelRadius * 6) + 1, 0);
+    glRotatef(90, 1, 0, 0);
+
+    GLfloat vertices[] = {
+        -0.625f, -0.5f, -0.9f, // 0
+         0.625f, -0.5f, -0.9f, // 1
+         0.625f,  0.5f, -0.9f, // 2
+        -0.625f,  0.5f, -0.9f, // 3
+        -1.25f,  -0.5f, 0.9f,  // 4
+         1.25f,  -0.5f, 0.9f,  // 5
+         1.25f,   0.5f, 0.9f,  // 6
+        -1.25f,   0.5f, 0.9f   // 7
+    };
+
+    GLubyte indices[] = {
+        0, 1, 2, 3, // front face
+        4, 5, 6, 7, // back face
+        0, 1, 5, 4, // bottom face
+        2, 3, 7, 6, // top face
+        0, 4, 7, 3, // left face
+        1, 5, 6, 2  // right face
+    };
+
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glVertexPointer(3, GL_FLOAT, 0, vertices);
+    glDrawElements(GL_QUADS, 24, GL_UNSIGNED_BYTE, indices);
+    glDisableClientState(GL_VERTEX_ARRAY);
+
+    glPopMatrix();
+    
+    glColor3f(1, 1, 1);
+    glPopMatrix();
+}
+
+void drawKiosk() {
+    float baseLength = 0.1;
+    float kioskLength1 = 0.15;
+    float kioskLength2 = 0.6;
+    float kioskLength3 = 0.8;
+    
+    glPushMatrix();
+    glTranslatef(-2, 0, 2.8);
+    glScalef(0.75, 1, 0.75);
+    
+    // Base
+    
+    glColor3f(0.2627f, 0.2431f, 0.2196f);
+    glPushMatrix();
+    glTranslatef(0, 0.05 + baseLength / 2, 0);
+    glScalef(18, 1, 18);
+    glutSolidCube(baseLength);
+    glPopMatrix();
+    
+    // Lower Part
+    
+    glColor3f(0.2745f, 0.1255f, 0.1765f);
+    glPushMatrix();
+    glTranslatef(0, 0.05 + baseLength + kioskLength1 / 2, 0);
+    glScalef(10, 1, 10);
+    glutSolidCube(kioskLength1);
+    glPopMatrix();
+    
+    // Kiosk Lower
+    
+    glColor3f(0.549f, 0.5294f, 0.502f);
+    glPushMatrix();
+    glTranslatef(0, 0.05 + baseLength + kioskLength1 + kioskLength2 / 2, 0);
+    glScalef(2.5, 1, 2.5);
+    glutSolidCube(kioskLength2);
+    glPopMatrix();
+    
+    // Kiosk Middle
+    
+    glColor3f(0.2745f, 0.1255f, 0.1765f);
+    glPushMatrix();
+    glTranslatef(0, 0.05 + baseLength + kioskLength1 + kioskLength2 + kioskLength3 / 2, 0);
+    glScalef(1.875, 1, 1.875);
+    glutSolidCube(kioskLength3);
+    glPopMatrix();
+    
+    // Kiosk Upper
+    
+    glColor3f(0.4275f, 0.2471f, 0.3216f);
+    glPushMatrix();
+    glTranslatef(0, 0.05 + baseLength + kioskLength1 + kioskLength2 + kioskLength3 + kioskLength1 / 2, 0);
+    glScalef(12, 1, 12);
+    glutSolidCube(kioskLength1);
+    glPopMatrix();
+    
+    // Kiosk Glass
+    
+    glColor3f(0, 0, 0);
+    glPushMatrix();
+    glTranslatef(0.35, 0.05 + baseLength + kioskLength1 + kioskLength2 + kioskLength3 / 2, 0.75);
+    glScalef(0.65, 0.65, 0.02);
+    glutSolidCube(1);
+    glPopMatrix();
+    
+    glColor3f(0, 0, 0);
+    glPushMatrix();
+    glTranslatef(-0.35, 0.05 + baseLength + kioskLength1 + kioskLength2 + kioskLength3 / 2, 0.75);
+    glScalef(0.65, 0.65, 0.02);
+    glutSolidCube(1);
+    glPopMatrix();
+    
+    // Curtain
+    
+    glColor3f(0.5, 0.5, 0.5);
+    glPushMatrix();
+    glTranslatef(0.35, 0.05 + baseLength + kioskLength1 + kioskLength2 + kioskLength3 / 2, 0.77);
+    glTranslatef(0, 0.35, 0);
+    glRotatef(curtain1Rotation, 1, 0, 0);
+    glTranslatef(0, -0.35, 0);
+    glScalef(0.65, 0.65, 0.02);
+    glutSolidCube(1);
+    glPopMatrix();
+    
+    glColor3f(0.5, 0.5, 0.5);
+    glPushMatrix();
+    glTranslatef(-0.35, 0.05 + baseLength + kioskLength1 + kioskLength2 + kioskLength3 / 2, 0.77);
+    glTranslatef(0, 0.35, 0);
+    glRotatef(curtain2Rotation, 1, 0, 0);
+    glTranslatef(0, -0.35, 0);
+    glScalef(0.65, 0.65, 0.02);
+    glutSolidCube(1);
+    glPopMatrix();
+    
+    glColor3f(1, 1, 1);
+    glPopMatrix();
+}
+
+void drawSeeSaw() {
+    float seeSawLength = 1;
+    
+    glPushMatrix();
+    glTranslatef(-2, 0, 0);
+    glRotatef(90, 0, 1, 0);
+    
+    glPushMatrix();
+    glTranslatef(0, 1, 0);
+    glRotatef(seeSawRotation, 0, 0, 1);
+    glTranslatef(0, -1, 0);
+    
+    // Main
+    
+    glColor3f(0.5922, 0.4, 0.2118);
+    glPushMatrix();
+    glTranslatef(0, 0.15 + 0.5, 0);
+    glScalef(2.5, 0.2, 0.5);
+    glutSolidCube(seeSawLength);
+    glPopMatrix();
+    
+    // Arms
+    
+    glColor3f(0.5, 0.5, 0.5);    
+    glPushMatrix();
+    glTranslatef(0.75, 0.15 + 0.5 + 0.2, 0);
+    glScalef(0.1, 0.3, 0.5);
+    glutSolidCube(seeSawLength);
+    glPopMatrix();
+    
+    glPushMatrix();
+    glTranslatef(-0.75, 0.15 + 0.5 + 0.2, 0);
+    glScalef(0.1, 0.3, 0.5);
+    glutSolidCube(seeSawLength);
+    glPopMatrix();
+    
+    glPopMatrix();
+    
+    // Base
+    
+    glPushMatrix();
+    GLUquadric* quad1 = gluNewQuadric();
+    glTranslatef(0, 0, 0);
+    glRotatef(-90, 1, 0, 0);
+    gluCylinder(quad1, 0.12, 0.12, 0.6, 50, 50);
+    glPopMatrix();
+    
+    glColor3f(1, 1, 1);
+    glPopMatrix();
+}
 
 void setupLights() {
     GLfloat ambientMaterial[] = { 0.7f, 0.7f, 0.7f, 1.0f };
@@ -916,14 +1228,13 @@ void displayCheatStatus() {
     int x = 40;
     int y = 950;
     
-    
     print(x, y, const_cast<char*>(text.c_str()), 18);
     
     glColor3f(1, 1, 1);
     glBegin(GL_QUADS);
     glVertex2f(x - 5, y + 25);
-    glVertex2f(x + 180, y + 25);
-    glVertex2f(x + 180, y - 15);
+    glVertex2f(x + 200, y + 25);
+    glVertex2f(x + 200, y - 15);
     glVertex2f(x - 5, y - 15);
     glEnd();
     
@@ -932,7 +1243,6 @@ void displayCheatStatus() {
     glMatrixMode(GL_MODELVIEW);
     glPopMatrix();
 }
-
 
 void Display() {
     setupCamera();
@@ -949,6 +1259,9 @@ void Display() {
         drawBurger();
         drawLamps();
         drawFerrisWheel();
+        drawCar();
+        drawKiosk();
+        drawSeeSaw();
     }
     if (displayCheatActivated || displayCheatDeactivated) {
         displayCheatStatus();
@@ -1046,10 +1359,13 @@ void Keyboard(unsigned char key, int x, int y) {
         case 'l':
             camera.rotateY(-a);
             break;
+        case 'o':
+            objectsAnimate = !objectsAnimate;
+            break;
         case ' ':
-                if (jetpack) {
-                    playerY += flyingStep;
-                }
+            if (jetpack) {
+                playerY += flyingStep;
+            }
             break;
         case 'z':
             if (jetpack) {
@@ -1088,7 +1404,10 @@ void Keyboard(unsigned char key, int x, int y) {
 }
 
 void specialKeys(int key, int x, int y) {
-    const float step = 0.5f;
+    float step = 0.5f;
+    if (jetpack) {
+        step = 1;
+    }
     const float playerWidth = 0.25;
 
     float leftBoundary = -3.025f + playerWidth;
@@ -1173,7 +1492,46 @@ void specialKeyReleased(int key, int x, int y) {
 
 void anim() {
     rotation += 10;
-    rotateFerris += 10;
+    if (objectsAnimate) {
+        rotateFerris += 10;
+        
+        carMovement += carDirection * 0.1;
+        if (carMovement >= 5 || carMovement <= 2) {
+            carDirection *= -1;
+        }
+        
+        lampLength1 += lampLengthDirection1 * 0.04;
+        if (lampLength1 >= 1.6 || lampLength1 <= 1) {
+            lampLengthDirection1 *= -1;
+            lamp1ReachedPeak = true;
+        }
+        
+        if (lamp1ReachedPeak) {
+            lampLength2 += lampLengthDirection2 * 0.04;
+            if (lampLength2 >= 1.6 || lampLength2 <= 1) {
+                lampLengthDirection2 *= -1;
+            }
+        }
+        
+        curtain1Rotation += curtain1RotationDirection * 10;
+            if (curtain1Rotation >= 0 || curtain1Rotation <= -90) {
+                curtain1RotationDirection *= -1;
+                openedCurtain1 = true;
+            }
+            
+            if (openedCurtain1) {
+                curtain2Rotation += curtain2RotationDirection * 10;
+                if (curtain2Rotation >= 0 || curtain2Rotation <= -90) {
+                    curtain2RotationDirection *= -1;
+                }
+            }
+        
+        seeSawRotation += seeSawDirection * 2;
+        if (seeSawRotation >= 20 || seeSawRotation <= -20) {
+            seeSawDirection *= -1;
+        }
+    }
+    
     counter ++;
     
     upDown += increment;
