@@ -14,12 +14,50 @@
 #include <SDL.h>
 #include <SDL_mixer.h>
 
-std::default_random_engine generator(static_cast<unsigned int>(std::chrono::system_clock::now().time_since_epoch().count()));
+// Structures
 
 struct Time {
     int minutes;
     int seconds;
 };
+
+// Class Declarations
+
+class Vector3f;
+class Camera;
+
+// Function Declarations
+
+Time secondsToMinutesAndSeconds(int totalSeconds);
+void print(int x, int y, char* string, int font);
+void playSound(int channel, int index);
+void gameEnd(bool win);
+void playerCollide();
+void displayTime();
+void drawBoundaries();
+void drawJetpack();
+void drawBigSmoke();
+void drawBurger(int mode);
+void drawLamps();
+void drawFerrisWheel();
+void drawCar();
+void drawKiosk();
+void drawSeeSaw();
+void drawFence();
+void setupLights();
+void setupCamera();
+bool checkRocketMan();
+void displayCheatStatus();
+void Display();
+void timer(int value);
+void Keyboard(unsigned char key, int x, int y);
+void specialKeys(int key, int x, int y);
+void specialKeyReleased(int key, int x, int y);
+void anim();
+
+// Variables
+
+std::default_random_engine generator(static_cast<unsigned int>(std::chrono::system_clock::now().time_since_epoch().count()));
 
 std::vector<std::string> audioFilesNames;
 std::vector<char> keys;
@@ -60,6 +98,8 @@ float lampLength1 = 1;
 float lampLengthDirection1 = 1;
 float lampLength2 = 1;
 float lampLengthDirection2 = 1;
+float fireAnimation = 1;
+float fireDirection = 1;
 bool objectsAnimate = false;
 bool lamp1ReachedPeak = false;
 float curtain1Rotation = -90.0f;
@@ -72,16 +112,10 @@ int seeSawDirection = 1;
 bool runningStarted = true;
 bool firstLoopAfterEnd = true;
 bool bigSmokeAteTheBurger = false;
-
-Time secondsToMinutesAndSeconds(int totalSeconds) {
-    Time result;
-    result.minutes = totalSeconds / 60;
-    result.seconds = totalSeconds % 60;
-    return result;
-}
-
 int timeRemaining = 60;
 Time displayedTime = secondsToMinutesAndSeconds(timeRemaining);
+
+// Definitions
 
 class Vector3f {
 public:
@@ -172,6 +206,13 @@ public:
 
 Camera camera;
 
+Time secondsToMinutesAndSeconds(int totalSeconds) {
+    Time result;
+    result.minutes = totalSeconds / 60;
+    result.seconds = totalSeconds % 60;
+    return result;
+}
+
 void print(int x, int y, char* string, int font) {
     int len, i;
     glRasterPos2f(x, y);
@@ -241,7 +282,7 @@ void playerCollide() {
     std::cout << playerX << ", " << playerY << ", " << playerZ << std::endl;
     std::cout << leftBoundary << ", " << rightBoundary << ", " << frontBoundary << ", " << backBoundary << "\n" << std::endl;
     
-    if (playerZ < -3) {
+    if (playerZ < -3 && playerY <= 1) {
         if (burgers == 1) {
             burgers --;
             playSound(1, 4);
@@ -297,7 +338,6 @@ void displayTime() {
     glMatrixMode(GL_MODELVIEW);
     glPopMatrix();
 }
-
 
 void drawBoundaries() {
     float thickness = 0.05f;
@@ -355,6 +395,67 @@ void drawBoundaries() {
     glPopMatrix();
     
     glColor3f(1, 1, 1);
+}
+
+void drawJetpack() {
+
+    glPushMatrix();
+    glColor3f(0.6, 0.7, 0.8);
+
+    // Main
+    
+    glPushMatrix();
+    glTranslatef(0, 0.75, -0.35);
+    glScalef(0.8, 0.5, 0.2);
+    glutSolidCube(1);
+    glPopMatrix();
+    
+    // Holes
+    
+    glColor3f(1, 1, 1);
+    
+    GLUquadric* quad1 = gluNewQuadric();
+    glPushMatrix();
+    glTranslatef(-0.25, 0.5, -0.35);
+    glRotatef(90, 1, 0, 0);
+    gluCylinder(quad1, 0.05, 0.05, 0.005, 50, 50);
+    glTranslatef(0.0f, 0.0f, 0.005);
+    gluDisk(quad1, 0.0, 0.05, 50, 1);
+    glTranslatef(0.0f, 0.0f, -0.005);
+    gluDisk(quad1, 0.0, 0.05, 50, 1);
+    glPopMatrix();
+    
+    GLUquadric* quad2 = gluNewQuadric();
+    glPushMatrix();
+    glTranslatef(0.25, 0.5, -0.35);
+    glRotatef(90, 1, 0, 0);
+    gluCylinder(quad2, 0.05, 0.05, 0.005, 50, 50);
+    glTranslatef(0.0f, 0.0f, 0.005);
+    gluDisk(quad2, 0.0, 0.05, 50, 1);
+    glTranslatef(0.0f, 0.0f, -0.005);
+    gluDisk(quad2, 0.0, 0.05, 50, 1);
+    glPopMatrix();
+    glColor3f(1, 1, 1);
+    
+    // Fire
+    glColor3f(1.0, 0.3529, 0.0);
+    
+    glPushMatrix();
+    glTranslatef(0.25, 0.495, -0.35);
+    glScalef(1, fireAnimation, 1);
+    glRotatef(90, 1, 0, 0);
+    glutSolidCone(0.04, 0.25, 50, 50);
+    glPopMatrix();
+    
+    glPushMatrix();
+    glTranslatef(-0.25, 0.495, -0.35);
+    glScalef(1, fireAnimation, 1);
+    glRotatef(90, 1, 0, 0);
+    glutSolidCone(0.04, 0.25, 50, 50);
+    glPopMatrix();
+    
+    glColor3f(1, 1, 1);
+    glPopMatrix();
 }
 
 void drawBigSmoke() {
@@ -606,6 +707,10 @@ void drawBigSmoke() {
     glutSolidCube(legSize);
     glPopMatrix();
     glColor3f(1, 1, 1);
+    
+    if (jetpack) {
+        drawJetpack();
+    }
     
     glPopMatrix();
     glColor3f(1, 1, 1);
@@ -1625,6 +1730,12 @@ void specialKeyReleased(int key, int x, int y) {
 
 void anim() {
     rotation += 10;
+    
+    fireAnimation += fireDirection * 0.04;
+    if (fireAnimation >= 1.2 || fireAnimation <= 0.4) {
+        fireDirection *= -1;
+    }
+    
     if (objectsAnimate) {
         rotateFerris += 10;
         
