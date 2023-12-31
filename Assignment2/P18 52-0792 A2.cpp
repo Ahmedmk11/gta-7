@@ -112,7 +112,7 @@ int seeSawDirection = 1;
 bool runningStarted = true;
 bool firstLoopAfterEnd = true;
 bool bigSmokeAteTheBurger = false;
-int timeRemaining = 60;
+int timeRemaining = 50;
 Time displayedTime = secondsToMinutesAndSeconds(timeRemaining);
 
 // Definitions
@@ -1846,7 +1846,7 @@ int main(int argc, char** argv) {
     
     for (int i = 0; i < audioFiles.size(); i++) {
         std::string path = __FILE__ + audioFiles.at(i);
-        std::string substring = "P18-52-0792.cpp/";
+        std::string substring = "P18 52-0792 A2.cpp/";
         size_t found = path.find(substring);
         if (found != std::string::npos) {
             path.erase(found, substring.length());
